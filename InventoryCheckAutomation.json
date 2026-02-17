@@ -1,0 +1,254 @@
+{
+  "name": "Inventory Check Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b84e4b1c-cff5-4781-a676-3832cc4e86a2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1w2RmYfD_s_NGk2zxurlPbXGU-f_y9UVi0RX4LbJ7P7o",
+          "mode": "list",
+          "cachedResultName": "Inventory_Data_Sample_",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w2RmYfD_s_NGk2zxurlPbXGU-f_y9UVi0RX4LbJ7P7o/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w2RmYfD_s_NGk2zxurlPbXGU-f_y9UVi0RX4LbJ7P7o/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "5e549383-5d12-443c-a335-68dbc2fcbec7",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "iiLJkCm5en94DBbD",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "62e1fbf4-8794-42e6-84fb-b45db4f7a64b",
+              "leftValue": "={{ $json.Stock }}",
+              "rightValue": "={{ $json.Threshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e30f6f2f-ea81-4fd3-ab78-998bd54bf017",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        64,
+        192
+      ],
+      "id": "c8b72177-b969-498b-9083-46b1a827dcff",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as a diligent, professional Inventory Control Assistant for a restaurant supplier.\nYour task is to generate and send one concise alert message to Gmail listing all items where stock is below the threshold.\n\nData:\n{{JSON.stringify($json)}}\n\nOutput format:\nStart with: \"⚠️ Low Stock Alert:\"\nThen list each item on a new line in this format:\n- [Item Name]: [Stock] left (need [Threshold]). Recommend reordering from [Supplier] to maintain adequate stock levels.\n\nRules:\n- If stock is 0, say \"Out of stock\" instead of \"[Stock] left\".\n- Do not add summaries, explanations, or closing sentences.\n\n\n",
+        "options": {
+          "systemMessage": "Act as a diligent, professional Inventory Control Assistant for a restaurant supplier.\nYour task is to generate and send one concise alert message to Gmail listing all items where stock is below the threshold.\n\nData:\n{{JSON.stringify($json)}}\n\nOutput format:\nStart with: \"⚠️ Low Stock Alert:\"\nThen list each item on a new line in this format:\n- [Item Name]: [Stock] left (need [Threshold]). Recommend reordering from [Supplier] to maintain adequate stock levels.\n\nRules:\n- If stock is 0, say \"Out of stock\" instead of \"[Stock] left\".\n- Do not add summaries, explanations, or closing sentences.\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        272,
+        192
+      ],
+      "id": "456d25db-f751-4172-9a72-f845f972940e",
+      "name": "AI Agent",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite-preview-09-2025",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        144,
+        400
+      ],
+      "id": "18838ea9-56ab-4700-91a2-007683f9b988",
+      "name": "Google Gemini Chat Model",
+      "retryOnFail": false,
+      "notesInFlow": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iub3QAt8qcUKDcGE",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "..."
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{$execution.id}}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        400
+      ],
+      "id": "254b14a7-0b86-423d-a675-1bbdaa6f7360",
+      "name": "Simple Memory",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "onError": "continueRegularOutput",
+      "notes": "..."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f573c4a0-b0fa-41e9-827d-e3ed0ba06eea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d6c59c9ab934f7c37765f3f3f204b320b9670249918971a9f5b75e2ef790df66"
+  },
+  "id": "NDuCBWtR0LqCYQbW",
+  "tags": []
+}
